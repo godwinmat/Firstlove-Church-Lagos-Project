@@ -8,9 +8,9 @@ import {
 	KeyboardAvoidingView,
 	Platform,
 	ScrollView,
-	SafeAreaView,
 	StatusBar,
 } from "react-native";
+import { SafeAreaView } from 'react-native-safe-area-context'
 import { FormInput, CustomButton } from "../components/utility";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import * as ImagePicker from "expo-image-picker";
@@ -264,7 +264,7 @@ export default Form = () => {
 						marginVertical: 20,
 					}}
 					resizeMode={"cover"}
-					source={require("../assets/flclogo2.jpg")}
+					source={require("../assets/images/flclogo2.jpg")}
 				/>
 				<Text
 					style={{
