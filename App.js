@@ -1,28 +1,24 @@
-import { NavigationContainer } from "@react-navigation/native";
-import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import Form from "./screens/Form";
-import Welcome from "./screens/Welcome";
+import "react-native-gesture-handler";
+import {
+	NavigationContainer,
+	DarkTheme,
+	DefaultTheme,
+} from "@react-navigation/native";
+import { Provider } from "react-redux";
+import store from "./store/index";
+import Navigator from "./navigator";
+import { useColorScheme, Appearance } from "react-native";
 
-const Stack = createNativeStackNavigator();
 function App() {
+	const theme = Appearance.getColorScheme();
 	return (
-		<NavigationContainer>
-			<Stack.Navigator
-				initialRouteName="Welcome"
-				screenOptions={{ headerShown: false }}
+		<Provider store={store}>
+			<NavigationContainer
+				theme={false ? DarkTheme : DefaultTheme}
 			>
-				<Stack.Screen
-					name="Welcome"
-					component={Welcome}
-					options={{ headerShown: false }}
-				/>
-				<Stack.Screen
-					name="Form"
-					component={Form}
-					options={{ title: "Form" }}
-				/>
-			</Stack.Navigator>
-		</NavigationContainer>
+				<Navigator />
+			</NavigationContainer>
+		</Provider>
 	);
 }
 

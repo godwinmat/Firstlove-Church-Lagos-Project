@@ -9,15 +9,19 @@ import {
 	Platform,
 	ScrollView,
 	StatusBar,
+	ToastAndroid
 } from "react-native";
-import { SafeAreaView } from 'react-native-safe-area-context'
+import { SafeAreaView } from "react-native-safe-area-context";
 import { FormInput, CustomButton } from "../components/utility";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import * as ImagePicker from "expo-image-picker";
 import validator from "validator";
 import { Feather } from "@expo/vector-icons";
+import { registerMember } from "../store/reducers/userReducers";
+import { useDispatch } from "react-redux";
 
-export default Form = () => {
+const Form = () => {
+	const dispatch = useDispatch()
 	const [formData, setFormData] = useState({
 		firstname: "",
 		lastname: "",
@@ -26,6 +30,7 @@ export default Form = () => {
 		address: "",
 		dateofbirth: "",
 		image: null,
+		preset: "flclimages"
 	});
 	const [openPicker, setOpenPicker] = useState(false);
 	const [error, setError] = useState({
@@ -52,13 +57,19 @@ export default Form = () => {
 	});
 	const [disableButton, setDisableButton] = useState(true);
 
+	const showToastWithGravity = (message) => {
+		ToastAndroid.showWithGravity(
+		  message,
+		  ToastAndroid.LONG,
+		  ToastAndroid.BOTTOM
+		);
+	  };
+
 	const onDateChange = (e, d) => {
 		setOpenPicker(false);
 		setFormData({
 			...formData,
-			dateofbirth: `${d.getDate()}-${
-				d.getMonth() + 1
-			}-${d.getFullYear()}`,
+			dateofbirth: `${d.getDate()}-${d.getMonth() + 1}-${d.getFullYear()}`,
 		});
 		changeSubmitButtonState();
 	};
@@ -96,7 +107,6 @@ export default Form = () => {
 	};
 
 	const validateInput = (name, val) => {
-		console.log(val);
 		switch (name) {
 			case "firstname":
 				if (validator.isAlpha(val, "en-US")) {
@@ -220,20 +230,38 @@ export default Form = () => {
 		}
 	};
 
-	const onSubmit = () => {
-		// console.log(formData);
+	const onSubmit = async () => {
+		const result = await dispatch(registerMember(formData)).unwrap()
+		if (result === "Database error.") {
+			console.log(result)
+		} else {
+			setFormData({
+				...formData,
+				firstname: "",
+				lastname: "",
+				phonenumber: "",
+				whatsappnumber: "",
+				address: "",
+				dateofbirth: "",
+				image: null
+			});
+			showToastWithGravity(result)
+		}
+
 	};
 
 	const pickImage = async () => {
 		let result = await ImagePicker.launchImageLibraryAsync({
 			mediaTypes: ImagePicker.MediaTypeOptions.Images,
 			allowsEditing: true,
-			quality: 1,
+			quality: 0.5,
+			base64: true
 		});
 
 		if (!result.cancelled) {
-			console.log(result);
-			setFormData({ ...formData, image: result.uri });
+			const imgExtension = result.uri.split(".")[-1]
+			const image = `data:image/${imgExtension};base64,${result.base64}`
+			setFormData({ ...formData, image });
 		}
 	};
 
@@ -256,7 +284,10 @@ export default Form = () => {
 				barStyle="dark-content"
 				animated
 			/>
-			<KeyboardAvoidingView style={styles.container}>
+			<KeyboardAvoidingView
+				behavior={Platform.OS === "ios" ? "padding" : "none"}
+				style={styles.container}
+			>
 				<Image
 					style={{
 						width: 300,
@@ -280,28 +311,33 @@ export default Form = () => {
 							placeholder={"First Name"}
 							onChangeText={onChangeText("firstname")}
 							error={error.firstname.message}
-						/>
+							defaultValue={formData.firstname}
+							/>
 						<FormInput
 							placeholder={"Last Name"}
 							onChangeText={onChangeText("lastname")}
 							error={error.lastname.message}
-						/>
+							defaultValue={formData.lastname}
+							/>
 						<FormInput
 							placeholder={"Phone Number"}
 							keyboardType="phone-pad"
 							onChangeText={onChangeText("phonenumber")}
 							error={error.phonenumber.message}
-						/>
+							defaultValue={formData.phonenumber}
+							/>
 						<FormInput
 							placeholder={"Whatsapp Number"}
 							keyboardType="phone-pad"
 							onChangeText={onChangeText("whatsappnumber")}
 							error={error.whatsappnumber.message}
-						/>
+							defaultValue={formData.whatsappnumber}
+							/>
 						<FormInput
 							placeholder={"Address"}
 							onChangeText={onChangeText("address")}
 							error={error.address.message}
+							defaultValue={formData.address}
 						/>
 						{formData.dateofbirth ? (
 							<View
@@ -316,7 +352,7 @@ export default Form = () => {
 							>
 								<FormInput
 									placeholder="Date of Birth"
-									value={formData.dateofbirth}
+									defaultValue={formData.dateofbirth}
 									styles={{
 										width: 120,
 										textAlign: "center",
@@ -362,7 +398,7 @@ export default Form = () => {
 								width: 280,
 								flexDirection: "row",
 								justifyContent: "space-between",
-								alignItems: "center"
+								alignItems: "center",
 							}}
 						>
 							<CustomButton
@@ -380,11 +416,13 @@ export default Form = () => {
 								}}
 								onPress={pickImage}
 							/>
-							{formData.image && <Feather
-								name="check-circle"
-								size={17}
-								color="#e60000"
-							/>}
+							{formData.image && (
+								<Feather
+									name="check-circle"
+									size={17}
+									color="#e60000"
+								/>
+							)}
 							<CustomButton
 								label="Take a Picture"
 								styles={{
@@ -419,6 +457,10 @@ export default Form = () => {
 							disabled={disableButton}
 						/>
 					</View>
+					{/* <Image source={{ uri: formData.image }} resizeMode={"cover"} style={{
+						width: 50,
+						height: 50
+					}} /> */}
 				</ScrollView>
 			</KeyboardAvoidingView>
 		</SafeAreaView>
@@ -437,3 +479,5 @@ const styles = StyleSheet.create({
 		paddingVertical: 20,
 	},
 });
+
+export default Form;
