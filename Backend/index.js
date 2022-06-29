@@ -3,9 +3,12 @@ import mongoose from "mongoose";
 import bodyParser from "body-parser";
 
 import userRoutes from "./routers/userRoutes.js";
+import areaRoutes from "./routers/areaRoutes.js";
+import memberRoutes from "./routers/memberRoutes.js";
+import attendanceRoutes from "./routers/attendanceRoutes.js"
 
 const app = express();
-const PORT = 5060;
+const PORT = 5555;
 
 const uri = "mongodb://localhost:27017/flcldata";
 
@@ -20,6 +23,9 @@ app.get("/", (req, res) => {
 })
 
 app.use("/user", userRoutes)
+app.use("/area", areaRoutes)
+app.use("/member", memberRoutes)
+app.use("/attendance", attendanceRoutes)
 
 app.listen(PORT, () => {
     console.log(`Listening at localhost:${PORT}`)

@@ -7,14 +7,42 @@ import {
 import { Provider } from "react-redux";
 import store from "./store/index";
 import Navigator from "./navigator";
-import { useColorScheme, Appearance } from "react-native";
+import { useColorScheme, StatusBar } from "react-native";
+
+// console.log("app")
 
 function App() {
-	const theme = Appearance.getColorScheme();
+	const theme = useColorScheme();
+	const myDarkTheme = {
+		...DarkTheme,
+		colors: {
+			...DarkTheme.colors,
+			primary: "rgb(255, 0, 0)",
+			lowerText: "grey",
+			shadow: "#ffffff",
+			background: "rgb(6, 8, 8)",
+		},
+	};
+	const myLightTheme = {
+		...DefaultTheme,
+		colors: {
+			...DefaultTheme.colors,
+			primary: "rgb(255, 0, 0)",
+			lowerText: "grey",
+			shadow: "#000000",
+		},
+	};
+
 	return (
 		<Provider store={store}>
+			<StatusBar
+				barStyle="light-content"
+				backgroundColor={"black"}
+				translucent
+				animated
+			/>
 			<NavigationContainer
-				theme={false ? DarkTheme : DefaultTheme}
+				theme={theme === "dark" ? myDarkTheme : myLightTheme}
 			>
 				<Navigator />
 			</NavigationContainer>

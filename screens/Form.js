@@ -1,27 +1,28 @@
 import { useState, useEffect } from "react";
-import {
-	StyleSheet,
-	Text,
-	View,
-	Image,
-	Button,
-	KeyboardAvoidingView,
-	Platform,
-	ScrollView,
-	StatusBar,
-	ToastAndroid
-} from "react-native";
+import { View, KeyboardAvoidingView, Platform, ScrollView } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { FormInput, CustomButton } from "../components/utility";
+import { showToastWithGravity } from "../components/utility";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import * as ImagePicker from "expo-image-picker";
 import validator from "validator";
-import { Feather } from "@expo/vector-icons";
-import { registerMember } from "../store/reducers/userReducers";
-import { useDispatch } from "react-redux";
+import { Feather, AntDesign } from "@expo/vector-icons";
+import { registerMember } from "../store/reducers/memberReducers";
+import { useDispatch, useSelector } from "react-redux";
+import { useTheme } from "@react-navigation/native";
+import { PTSans_400Regular, PTSans_700Bold } from "@expo-google-fonts/pt-sans";
+import { memberSelector, userSelector } from "../store/selectors";
+import FormInput from "../components/FormInput";
+import DropDown from "../components/DropDown";
+import CustomButton from "../components/CustomButton";
+import NavBar from "../components/NavBar";
 
-const Form = () => {
-	const dispatch = useDispatch()
+const Form = ({ navigation }) => {
+	const dispatch = useDispatch();
+	const member = useSelector(memberSelector);
+	const [gender, setGender] = useState("");
+	const [area, setArea] = useState("");
+	const [isLeader, setIsLeader] = useState("");
+	const { colors, dark } = useTheme();
 	const [formData, setFormData] = useState({
 		firstname: "",
 		lastname: "",
@@ -30,7 +31,7 @@ const Form = () => {
 		address: "",
 		dateofbirth: "",
 		image: null,
-		preset: "flclimages"
+		preset: "flclimages",
 	});
 	const [openPicker, setOpenPicker] = useState(false);
 	const [error, setError] = useState({
@@ -57,19 +58,13 @@ const Form = () => {
 	});
 	const [disableButton, setDisableButton] = useState(true);
 
-	const showToastWithGravity = (message) => {
-		ToastAndroid.showWithGravity(
-		  message,
-		  ToastAndroid.LONG,
-		  ToastAndroid.BOTTOM
-		);
-	  };
-
 	const onDateChange = (e, d) => {
 		setOpenPicker(false);
 		setFormData({
 			...formData,
-			dateofbirth: `${d.getDate()}-${d.getMonth() + 1}-${d.getFullYear()}`,
+			dateofbirth: `${d.getDate()}-${
+				d.getMonth() + 1
+			}-${d.getFullYear()}`,
 		});
 		changeSubmitButtonState();
 	};
@@ -87,7 +82,10 @@ const Form = () => {
 			!error.address.state &&
 			formData.address.length > 0 &&
 			formData.dateofbirth.length > 0 &&
-			formData.image !== null
+			formData.image !== null &&
+			gender !== "" &&
+			isLeader !== "" &&
+			area !== ""
 		) {
 			setDisableButton(false);
 		} else {
@@ -131,7 +129,6 @@ const Form = () => {
 							message: "First name is required.",
 						},
 					});
-					// setFirstNameError("First name is required.");
 				}
 				break;
 			case "lastname":
@@ -178,8 +175,8 @@ const Form = () => {
 					setError({
 						...error,
 						phonenumber: {
-							state: true,
-							message: "Phone number is required.",
+							state: false,
+							message: "",
 						},
 					});
 				}
@@ -203,8 +200,8 @@ const Form = () => {
 					setError({
 						...error,
 						whatsappnumber: {
-							state: true,
-							message: "Whatsapp number is required.",
+							state: false,
+							message: "",
 						},
 					});
 				}
@@ -231,23 +228,24 @@ const Form = () => {
 	};
 
 	const onSubmit = async () => {
-		const result = await dispatch(registerMember(formData)).unwrap()
-		if (result === "Database error.") {
-			console.log(result)
-		} else {
-			setFormData({
-				...formData,
-				firstname: "",
-				lastname: "",
-				phonenumber: "",
-				whatsappnumber: "",
-				address: "",
-				dateofbirth: "",
-				image: null
-			});
-			showToastWithGravity(result)
-		}
-
+		setDisableButton(true);
+		const result = await dispatch(
+			registerMember({ ...formData, area, gender, isLeader })
+		).unwrap();
+		setArea("");
+		setGender("");
+		setIsLeader("");
+		setFormData({
+			...formData,
+			firstname: "",
+			lastname: "",
+			phonenumber: "",
+			whatsappnumber: "",
+			address: "",
+			dateofbirth: "",
+			image: null,
+		});
+		showToastWithGravity(result);
 	};
 
 	const pickImage = async () => {
@@ -255,12 +253,12 @@ const Form = () => {
 			mediaTypes: ImagePicker.MediaTypeOptions.Images,
 			allowsEditing: true,
 			quality: 0.5,
-			base64: true
+			base64: true,
 		});
 
 		if (!result.cancelled) {
-			const imgExtension = result.uri.split(".")[-1]
-			const image = `data:image/${imgExtension};base64,${result.base64}`
+			const imgExtension = result.uri.split(".")[-1];
+			const image = `data:image/${imgExtension};base64,${result.base64}`;
 			setFormData({ ...formData, image });
 		}
 	};
@@ -278,66 +276,81 @@ const Form = () => {
 		}
 	};
 	return (
-		<SafeAreaView style={{ flex: 1 }}>
-			<StatusBar
-				backgroundColor="white"
-				barStyle="dark-content"
-				animated
-			/>
+		<SafeAreaView style={{ flex: 1, justifyContent: "center" }}>
+			<NavBar navigation={navigation} navLabel="Register A Member" />
 			<KeyboardAvoidingView
 				behavior={Platform.OS === "ios" ? "padding" : "none"}
-				style={styles.container}
+				style={{
+					alignItems: "center",
+					marginTop: 50,
+				}}
 			>
-				<Image
-					style={{
-						width: 300,
-						height: 170,
-						marginVertical: 20,
-					}}
-					resizeMode={"cover"}
-					source={require("../assets/images/flclogo2.jpg")}
-				/>
-				<Text
-					style={{
-						fontSize: 30,
-					}}
+				<ScrollView
+					showsVerticalScrollIndicator={false}
+					keyboardShouldPersistTaps={"handled"}
+					style={{}}
 				>
-					Contact Information
-				</Text>
-
-				<ScrollView showsVerticalScrollIndicator={false}>
-					<View style={styles.background}>
+					<View
+						style={{
+							width: "100%",
+							paddingVertical: 20,
+						}}
+					>
 						<FormInput
-							placeholder={"First Name"}
+							placeholder={"First Name*"}
 							onChangeText={onChangeText("firstname")}
 							error={error.firstname.message}
 							defaultValue={formData.firstname}
-							/>
+						/>
 						<FormInput
-							placeholder={"Last Name"}
+							placeholder={"Last Name*"}
 							onChangeText={onChangeText("lastname")}
 							error={error.lastname.message}
 							defaultValue={formData.lastname}
-							/>
+						/>
 						<FormInput
 							placeholder={"Phone Number"}
 							keyboardType="phone-pad"
 							onChangeText={onChangeText("phonenumber")}
 							error={error.phonenumber.message}
 							defaultValue={formData.phonenumber}
-							/>
+						/>
 						<FormInput
 							placeholder={"Whatsapp Number"}
 							keyboardType="phone-pad"
 							onChangeText={onChangeText("whatsappnumber")}
 							error={error.whatsappnumber.message}
 							defaultValue={formData.whatsappnumber}
-							/>
+						/>
+						<DropDown
+							placeholder={"Gender*"}
+							data={[
+								{ _id: "male", name: "Male" },
+								{ _id: "female", name: "Female" },
+							]}
+							setValue={setGender}
+							value={gender}
+						/>
+
 						<FormInput
-							placeholder={"Address"}
+							placeholder={"Address*"}
 							onChangeText={onChangeText("address")}
 							error={error.address.message}
 							defaultValue={formData.address}
+						/>
+						<DropDown
+							placeholder={"Area*"}
+							setValue={setArea}
+							value={area}
+						/>
+						<DropDown
+							placeholder={"Are you a leader?*"}
+							data={[
+								{ _id: "yes", name: "Yes" },
+								{ _id: "no", name: "No" },
+							]}
+							setValue={setIsLeader}
+							value={isLeader}
 						/>
 						{formData.dateofbirth ? (
 							<View
@@ -381,7 +394,7 @@ const Form = () => {
 									height: 45,
 									marginBottom: 10,
 								}}
-								labelStyle={{ fontSize: 18 }}
+								labelStyle={{ fontSize: 19 }}
 							/>
 						)}
 
@@ -404,15 +417,13 @@ const Form = () => {
 							<CustomButton
 								label="Pick an Image"
 								styles={{
-									width: 120,
-									height: 35,
+									width: 125,
+									height: 40,
 									backgroundColor: "transparent",
 									borderWidth: 1,
-									borderColor: "#e60000",
 								}}
 								labelStyle={{
-									fontSize: 18,
-									color: "#000",
+									fontSize: 19,
 								}}
 								onPress={pickImage}
 							/>
@@ -420,21 +431,19 @@ const Form = () => {
 								<Feather
 									name="check-circle"
 									size={17}
-									color="#e60000"
+									color={colors.primary}
 								/>
 							)}
 							<CustomButton
 								label="Take a Picture"
 								styles={{
-									width: 120,
-									height: 35,
+									width: 125,
+									height: 40,
 									backgroundColor: "transparent",
 									borderWidth: 1,
-									borderColor: "#e60000",
 								}}
 								labelStyle={{
-									fontSize: 18,
-									color: "#000",
+									fontSize: 19,
 								}}
 								onPress={takeImage}
 							/>
@@ -445,16 +454,15 @@ const Form = () => {
 								width: 280,
 								height: 40,
 								marginTop: 20,
-								backgroundColor: "#f50f0f",
+								backgroundColor: colors.primary,
 								borderWidth: 0,
 							}}
 							labelStyle={{
-								fontSize: 20,
-								fontWeight: "bold",
-								color: "white",
+								fontSize: 21,
 							}}
 							onPress={onSubmit}
 							disabled={disableButton}
+							animating={member.registermemberloading}
 						/>
 					</View>
 					{/* <Image source={{ uri: formData.image }} resizeMode={"cover"} style={{
@@ -466,18 +474,5 @@ const Form = () => {
 		</SafeAreaView>
 	);
 };
-
-const styles = StyleSheet.create({
-	container: {
-		flex: 1,
-		backgroundColor: "#fff",
-		alignItems: "center",
-	},
-	background: {
-		width: "100%",
-		alignItems: "center",
-		paddingVertical: 20,
-	},
-});
 
 export default Form;

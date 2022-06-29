@@ -12,7 +12,8 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import React from "react";
 
 import { AntDesign } from "@expo/vector-icons";
-import { FormInput, PasswordInput } from "../components/utility";
+import PasswordInput from "../components/PasswordInput";
+import FormInput from "../components/FormInput";
 
 const Forgottenpassword = ({ navigation }) => {
 	const { width, height } = Dimensions.get("screen");
@@ -77,7 +78,10 @@ const Forgottenpassword = ({ navigation }) => {
 						alignItems: "center",
 					}}
 				>
-					<ScrollView showsVerticalScrollIndicator={false}>
+					<ScrollView
+						showsVerticalScrollIndicator={false}
+						keyboardShouldPersistTaps={"handled"}
+					>
 						<Text
 							style={{
 								fontFamily: "Lato_700Bold",

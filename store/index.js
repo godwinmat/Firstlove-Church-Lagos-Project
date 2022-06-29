@@ -1,12 +1,16 @@
 import { configureStore } from "@reduxjs/toolkit";
-import { userSlices } from "./slices/index";
+import { memberSlice, userSlice, attendanceSlice } from "./slices/index";
 
 const store = configureStore({
 	reducer: {
-		users: userSlices.reducer
+		user: userSlice.reducer,
+		member: memberSlice.reducer,
+		attendance: attendanceSlice.reducer
 	},
 });
 
-export const userActions = userSlices.actions
+export const userActions = userSlice.actions
+export const memberActions = memberSlice.actions
+export const attendanceActions = attendanceSlice.actions
 
 export default store;

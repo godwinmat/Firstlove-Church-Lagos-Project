@@ -11,25 +11,36 @@ import * as SecureStore from "expo-secure-store";
 export default userSlice = createSlice({
 	name: "user",
 	initialState: {
-		loggedIn: false,
+		loggedin: false,
 		username: "",
 		firstname: "",
 		lastname: "",
 		phonenumber: "",
 		whatsappnumber: "",
+		email: "",
+		area: "",
+		gender: "",
 		address: "",
-		dateofbirth: "",
+		userid: "",
+		dateofbirth: {
+			day: null,
+			month: null,
+			year: null,
+		},
 		image: "",
+		roles: [],
+		isAdmin: false
 	},
 	reducers: {
-		updateLogin,
+		// updateLogin,
 	},
 	extraReducers: {
 		[loginUser.fulfilled]: (state, { payload }) => {
 			if (payload.message === "login successful.") {
 				state.loggedIn = true;
 				state.username = payload.data;
-				const setLoggedIn = async () => {
+				state.userid = payload.userid;
+				const setLogIn = async () => {
 					try {
 						await SecureStore.setItemAsync(
 							"isBacentaLeaderLoggedIn",
@@ -39,47 +50,80 @@ export default userSlice = createSlice({
 							"bacentaLeaderUsername",
 							payload.data
 						);
+						await SecureStore.setItemAsync(
+							"bacentaLeaderId",
+							payload.userid
+						);
 					} catch (error) {
 						console.log(error);
 					}
 				};
-				setLoggedIn();
+				setLogIn();
+			} else if (payload.message === "admin login successful.") {
+				state.loggedIn = true
+				state.userid = "firstlovechurchlagosadministrator"
+				state.isAdmin = true
+				const setAdminLogIn = async () => {
+					try {
+						await SecureStore.setItemAsync(
+							"isAdminLoggedIn",
+							"true"
+						);
+						await SecureStore.setItemAsync(
+							"adminId",
+							"firstlovechurchlagosadministrator"
+						);
+					} catch (error) {
+						console.log(error);
+					}
+				};
+				setAdminLogIn();
 			}
 		},
 		[logoutUser.fulfilled]: (state, { payload }) => {
 			state.loggedIn = false;
 			state.username = "";
+			state.userid = "";
+			state.firstname = "";
+			state.lastname = "";
+			state.phonenumber = "";
+			state.whatsappnumber = "";
+			state.email = "";
+			state.area = "";
+			state.address = "";
+			state.dateofbirth.day = "";
+			state.dateofbirth.month = "";
+			state.dateofbirth.year = "";
+			state.image = "";
+			state.gender = "";
 		},
 		[initUser.fulfilled]: (state, { payload }) => {
-			if (payload) {
-				state.loggedIn = payload.loggedIn;
-				state.username = payload.username;
+			if (payload.isAdmin) {
+				state.isAdmin = true
+				state.userid = payload.adminId;
+				state.loggedIn = true;
+				state.username = payload.adminUsername
 			} else {
 				state.loggedIn = payload.loggedIn;
 				state.username = payload.username;
+				state.userid = payload.userid;
 			}
 		},
-		[fetchUser.fulfilled]: (
-			state,
-			{
-				payload: {
-					firstname,
-					lastname,
-					phonenumber,
-					whatsappnumber,
-					address,
-					dateofbirth,
-					image,
-				},
+		[fetchUser.fulfilled]: (state, { payload }) => {
+			if (payload !== "error") {
+				state.firstname = payload.firstname;
+				state.lastname = payload.lastname;
+				state.phonenumber = payload.phonenumber;
+				state.whatsappnumber = payload.whatsappnumber;
+				state.email = payload.email;
+				state.area = payload.area;
+				state.address = payload.address;
+				state.dateofbirth.day = payload.dateofbirth.day;
+				state.dateofbirth.month = payload.dateofbirth.month;
+				state.dateofbirth.year = payload.dateofbirth.year;
+				state.image = payload.image;
+				state.gender = payload.gender;
 			}
-		) => {
-			state.firstname = firstname;
-			state.lastname = lastname;
-			state.phonenumber = phonenumber;
-			state.whatsappnumber = whatsappnumber;
-			state.address = address;
-			state.dateofbirth = dateofbirth;
-			state.image = image;
 		},
 	},
 });

@@ -1,10 +1,13 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "axios";
 import * as SecureStore from "expo-secure-store";
-import { convertBooleanStringToBoolean } from "../../components/utility";
+import {
+	convertBooleanStringToBoolean,
+	showToastWithGravity,
+} from "../../components/utility";
 
-// const url = "http://192.168.4.126:5060";
-const url = "http://localhost:5060";
+// const url = "http://192.168.233.126:5555";
+const url = "http://localhost:5555";
 const cloudinaryUrl = "https://api.cloudinary.com/v1_1/flclimages/image/upload";
 
 export const loginUser = createAsyncThunk(
@@ -14,7 +17,7 @@ export const loginUser = createAsyncThunk(
 			const response = await axios.post(`${url}/user/login`, loginData);
 			return response.data;
 		} catch (error) {
-			console.log(error)
+			console.log(error);
 		}
 	}
 );
@@ -22,37 +25,57 @@ export const initUser = createAsyncThunk(
 	"user/init-user",
 	async (_, thunkApi) => {
 		try {
-			const loggedIn = convertBooleanStringToBoolean(await SecureStore.getItemAsync(
-				"isBacentaLeaderLoggedIn"
-			))
-			const username = await SecureStore.getItemAsync(
-				"bacentaLeaderUsername"
+			const adminLoggedIn = convertBooleanStringToBoolean(
+				await SecureStore.getItemAsync("isAdminLoggedIn")
 			);
-			
-			if (loggedIn) {
-				return {loggedIn, username}
+			if (adminLoggedIn) {
+				const adminId = await SecureStore.getItemAsync("adminId");
+				const adminUsername = await SecureStore.getItemAsync("adminUsername");
+				return {
+					isAdmin: true,
+					adminId,
+					adminUsername
+				}
 			} else {
-				return {loggedIn, username};
+				const loggedIn = convertBooleanStringToBoolean(
+					await SecureStore.getItemAsync("isBacentaLeaderLoggedIn")
+				);
+				const username = await SecureStore.getItemAsync(
+					"bacentaLeaderUsername"
+				);
+				const userid = await SecureStore.getItemAsync("bacentaLeaderId");
+				return {
+					loggedIn,
+					username,
+					userid,
+				};
 			}
 		} catch (error) {
-			console.log(error); 
+			console.log(error);
 		}
 	}
 );
-export const logoutUser = createAsyncThunk("user/logout", async () => {
+export const logoutUser = createAsyncThunk("user/logout", async (_, thunkApi) => {
 	try {
+		if (thunkApi.getState().user.isAdmin) {
+			await SecureStore.setItemAsync("isAdminLoggedIn", "false")
+			await SecureStore.setItemAsync("adminId", "")
+			await SecureStore.setItemAsync("adminUsername", "")
+		}
 		await SecureStore.setItemAsync("isBacentaLeaderLoggedIn", "false");
+		await SecureStore.setItemAsync("bacentaLeaderUsername", "");
+		await SecureStore.setItemAsync("bacentaLeaderId", "");
 	} catch (error) {
 		console.log(error);
 	}
 });
-export const updateLogin = (state, { payload }) => {
-	if (payload) {
-		state.loggedIn = payload;
-	} else {
-		state.loggedIn = payload;
-	}
-};
+// export const updateLogin = (state, { payload }) => {
+// 	if (payload) {
+// 		state.loggedIn = payload;
+// 	} else {
+// 		state.loggedIn = payload;
+// 	}
+// };
 export const registerBacentaLeader = createAsyncThunk(
 	"user/register-bacenta-leader",
 	async function (registerData) {
@@ -61,9 +84,9 @@ export const registerBacentaLeader = createAsyncThunk(
 				`${url}/user/register-bacenta-leader`,
 				registerData
 			);
-			return response.status;
+			return response.data;
 		} catch (error) {
-			return { data: "", message: "error" };
+			console.log(error);
 		}
 	}
 );
@@ -78,7 +101,7 @@ export const verifyUsername = createAsyncThunk(
 			);
 			return response.data;
 		} catch (error) {
-			return "error";
+			console.log(error);
 		}
 	}
 );
@@ -90,58 +113,55 @@ export const verifyPhone = createAsyncThunk(
 			const response = await axios.post(
 				`${url}/user/verify-phonenumber`,
 				phonenumber
-			);
-			if (response.status === 400) {
-				console.log(response.data);
-			} else {
-				return response.data
-			}
+			)
+			return response.data;
 		} catch (error) {
-			return "error";
+			console.log(error);
 		}
 	}
 );
 
-export const registerMember = createAsyncThunk("user/register-member", async function (userData) {
-	try {
-		const imageData = new FormData()
-		imageData.append("file", userData.image)
-		imageData.append("upload_preset", userData.preset)
-		const uploadResponse = await fetch(cloudinaryUrl, {
-			method: "post",
-			body: imageData
-		})
-		const { secure_url } = await uploadResponse.json()
-		userData = {
-			firstname: userData.firstname,
-			lastname: userData.lastname,
-			phonenumber: userData.phonenumber,
-			whatsappnumber: userData.whatsappnumber,
-			address: userData.address,
-			dateofbirth: userData.dateofbirth,
-			image: secure_url
+export const verifyEmail = createAsyncThunk(
+	"user/verify-email",
+	async function (data) {
+		try {
+			const response = await axios.post(
+				`${url}/user/verify-email`,
+				data
+			)
+			return response.data;
+		} catch (error) {
+			console.log(error);
 		}
-		const response = await axios.post(`${url}/user/register-member`, userData)
-		if (response.status === 200) {
-			return response.data
-		} else {
-			console.log(response.data)
-		}
-	} catch (error) {
-		console.log(error)
 	}
-})
+);
 
-export const fetchUser = createAsyncThunk("user", async function (username) {
+export const fetchUser = createAsyncThunk("user", async function (data, thunkApi) {
 	try {
-		const response = await axios.post(`${url}/user`, {username})
-		if (response.status === 200) {
-			return response.data
-		} else {
-			console.log("error")
-			console.log(response.data)
+		const response = await axios.post(`${url}/user`, data);
+		if (response.data !== "user does not exist.") {
+			return response.data;
 		}
+		thunkApi.dispatch(logoutUser())
 	} catch (error) {
-		console.log(error)
+		showToastWithGravity(
+			"Could not connect to server, please check your internet connection and try again."
+		);
+		console.log(error);
 	}
-})
+});
+
+export const checkIfUserExist = createAsyncThunk(
+	"user/check-if-user-exist",
+	async function (data) {
+		try {
+			const response = await axios.post(
+				`${url}/user/check-if-user-exist`,
+				data
+			);
+			return response.data;
+		} catch (error) {
+			console.log(error);
+		}
+	}
+);

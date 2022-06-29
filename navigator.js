@@ -4,23 +4,29 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { useDispatch, useSelector } from "react-redux";
 import { initUser } from "./store/reducers/userReducers";
 import Login from "./screens/Login";
-import Dashboard from "./screens/Home";
-import Form from "./screens/Form";
 import Welcome from "./screens/Welcome";
 import Register from "./screens/Register";
 import Forgottenpassword from "./screens/Forgottenpassword";
-import TabNavigator from "./navigators/TabNavigator";
 import DrawerNavigator from "./navigators/DrawerNavigator";
+import { PTSans_400Regular, PTSans_700Bold } from "@expo-google-fonts/pt-sans";
+import { Lato_400Regular, Lato_700Bold } from "@expo-google-fonts/lato";
+import * as Font from "expo-font";
 
 const Navigator = () => {
 	const Stack = createNativeStackNavigator();
-	const loggedIn = useSelector((state) => state["users"].loggedIn);
+	const loggedIn = useSelector((state) => state["user"].loggedIn);
 	const [loading, setLoading] = useState(true);
 	const dispatch = useDispatch();
 
 	const init = async () => {
 		try {
 			await dispatch(initUser());
+			await Font.loadAsync({
+				Lato_400Regular,
+				Lato_700Bold,
+				PTSans_400Regular,
+				PTSans_700Bold,
+			});
 		} catch (error) {
 			console.log(error);
 		} finally {
@@ -33,7 +39,7 @@ const Navigator = () => {
 		return () => {
 			setLoading(true);
 		};
-	}, [loggedIn]); 
+	}, [loggedIn]);
 
 	if (loading) {
 		return (
@@ -56,7 +62,7 @@ const Navigator = () => {
 				component={Login}
 				options={{
 					headerShown: false,
-				}} 
+				}}
 			/>
 			<Stack.Screen
 				name="Drawer"

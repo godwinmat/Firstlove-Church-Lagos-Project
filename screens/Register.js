@@ -7,34 +7,64 @@ import {
 	TouchableOpacity,
 	StyleSheet,
 	KeyboardAvoidingView,
+	ToastAndroid,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import React, { useState, useEffect, useCallback } from "react";
 import validator from "validator";
 
 import { AntDesign } from "@expo/vector-icons";
-import { FormInput, PasswordInput } from "../components/utility";
+import { showToastWithGravity } from "../components/utility";
 
 import { useDispatch } from "react-redux";
 import {
 	registerBacentaLeader,
 	verifyUsername,
 	verifyPhone,
+	verifyEmail,
+	checkIfUserExist,
 } from "../store/reducers/userReducers";
-import { useFocusEffect } from "@react-navigation/native";
+import { useFocusEffect, useTheme } from "@react-navigation/native";
+import RegisterMain from "../components/RegisterMain";
 
 const Register = ({ navigation }) => {
+	const { colors, dark } = useTheme();
 	const dispatch = useDispatch();
 	const [disableButton, setDisableButton] = useState(true);
+	const [phoneNumber, setPhoneNumber] = useState("");
+	const [modalVisible, setModalVisible] = useState(false);
+	const [modalAreaVisible, setModalAreaVisible] = useState(false);
+	const [query, setQuery] = useState([]);
+	const [dropDownValue, setDropDownValue] = useState("");
+	const [isEmpty, setIsEmpty] = useState("");
+	const [userDetails, setUserDetails] = useState({ fullname: "" });
 	const [registerData, setRegisterData] = useState({
 		username: "",
-		phonenumber: "",
+		email: "",
 		password: "",
 		confirmpassword: "",
 	});
 
+	const onChange = async (val) => {
+		if (val !== "") {
+			setIsEmpty(val);
+			const result = await dispatch(
+				checkIfUserExist({ fullname: val })
+			).unwrap();
+			if (result !== []) {
+				setQuery(result);
+				return;
+			}
+		}
+		setQuery([]);
+	};
+
 	const [error, setError] = useState({
 		username: {
+			state: false,
+			message: "",
+		},
+		email: {
 			state: false,
 			message: "",
 		},
@@ -55,15 +85,17 @@ const Register = ({ navigation }) => {
 	const onSubmit = async () => {
 		const result = await dispatch(
 			registerBacentaLeader({
-				username: registerData.username,
-				phonenumber: registerData.phonenumber,
-				password: registerData.password,
+				logindetails: {
+					username: registerData.username,
+					phonenumber: phoneNumber,
+					area: dropDownValue,
+					email: registerData.email,
+					password: registerData.password,
+				},
+				userdetails: userDetails,
 			})
 		).unwrap();
-		if (result === "error") {
-			console.log("error");
-			return;
-		}
+		showToastWithGravity(result);
 		navigation.navigate("Login");
 	};
 
@@ -72,6 +104,7 @@ const Register = ({ navigation }) => {
 			return () => {
 				setRegisterData({
 					username: "",
+					email: "",
 					phonenumber: "",
 					password: "",
 					confirmpassword: "",
@@ -84,8 +117,7 @@ const Register = ({ navigation }) => {
 		if (
 			!error.username.state &&
 			registerData.username.length > 0 &&
-			!error.phonenumber.state &&
-			registerData.phonenumber.length > 0 &&
+			phoneNumber.length > 0 &&
 			!error.password.state &&
 			registerData.password.length > 0 &&
 			!error.confirmpassword.state &&
@@ -163,9 +195,7 @@ const Register = ({ navigation }) => {
 								username: val,
 							})
 						).unwrap();
-						if (result === "error") {
-							console.log("error");
-						} else if (result === "username already exists.") {
+						if (result === "username already exists.") {
 							setError((prevState) => ({
 								...prevState,
 								username: {
@@ -199,44 +229,42 @@ const Register = ({ navigation }) => {
 					}));
 				}
 				break;
-			case "phonenumber":
-				if (validator.isMobilePhone(val, "en-NG")) {
+			case "email":
+				if (validator.isEmail(val)) {
 					const result = await dispatch(
-						verifyPhone({
-							phonenumber: val,
+						verifyEmail({
+							email: val,
 						})
 					).unwrap();
-					if (result === "error") {
-						console.log("error");
-					} else if (result === "phonenumber already exists.") {
+					if (result === "email already exists.") {
 						setError((prevState) => ({
 							...prevState,
-							phonenumber: {
+							email: {
 								state: true,
-								message: "Phone number is taken already.",
+								message: "Email address is already taken.",
 							},
 						}));
 					} else {
 						setError((prevState) => ({
 							...prevState,
-							phonenumber: { state: false, message: "" },
+							email: { state: false, message: "" },
 						}));
 					}
 				} else {
 					setError((prevState) => ({
 						...prevState,
-						phonenumber: {
+						email: {
 							state: true,
-							message: "Phone number must be correct.",
+							message: "Invalid email address.",
 						},
 					}));
 				}
 				if (validator.isEmpty(val)) {
 					setError((prevState) => ({
 						...prevState,
-						phonenumber: {
+						email: {
 							state: true,
-							message: "Phone number is required.",
+							message: "Email is required.",
 						},
 					}));
 				}
@@ -296,6 +324,37 @@ const Register = ({ navigation }) => {
 			default:
 				break;
 		}
+		if (!validator.isEmpty(phoneNumber)) {
+			if (validator.isMobilePhone(phoneNumber, "en-NG")) {
+				const result = await dispatch(
+					verifyPhone({
+						phonenumber: phoneNumber,
+					})
+				).unwrap();
+				if (result === "phonenumber already exists.") {
+					setError((prevState) => ({
+						...prevState,
+						phonenumber: {
+							state: true,
+							message: "Phone number is already taken.",
+						},
+					}));
+				} else {
+					setError((prevState) => ({
+						...prevState,
+						phonenumber: { state: false, message: "" },
+					}));
+				}
+			} else {
+				setError((prevState) => ({
+					...prevState,
+					phonenumber: {
+						state: true,
+						message: "Phone number must be correct.",
+					},
+				}));
+			}
+		}
 	};
 
 	const { width, height } = Dimensions.get("screen");
@@ -337,7 +396,7 @@ const Register = ({ navigation }) => {
 			>
 				<View
 					style={{
-						marginVertical: 40,
+						marginVertical: 20,
 						backgroundColor: "#ced4da",
 						width: 36,
 						height: 36,
@@ -361,101 +420,29 @@ const Register = ({ navigation }) => {
 						alignItems: "center",
 					}}
 				>
-					<ScrollView showsVerticalScrollIndicator={false}>
-						<Text
-							style={{
-								fontFamily: "Lato_700Bold",
-								fontSize: 35,
-								paddingBottom: 40,
-								color: "#343a40",
-							}}
-						>
-							Register a new {"\n"}Bacenta Account{"\n"}and Start
-							Busing!
-						</Text>
-						<View>
-							<FormInput
-								placeholder={"Username"}
-								styles={styles.input}
-								onChangeText={onChangeText("username")}
-								error={error.username.message}
-								defaultValue={registerData.username}
-							/>
-							<FormInput
-								placeholder={"Phone Number"}
-								styles={styles.input}
-								keyboardType="phone-pad"
-								onChangeText={onChangeText("phonenumber")}
-								error={error.phonenumber.message}
-								defaultValue={registerData.phonenumber}
-							/>
-							<PasswordInput
-								placeholder={"Password"}
-								styles={styles.input}
-								onChangeText={onChangeText("password")}
-								error={error.password.message}
-								defaultValue={registerData.password}
-							/>
-							<PasswordInput
-								placeholder={"Confirm Password"}
-								styles={styles.input}
-								onChangeText={onChangeText("confirmpassword")}
-								error={error.confirmpassword.message}
-								defaultValue={registerData.confirmpassword}
-							/>
-							<View
-								style={{
-									flexDirection: "row",
-									justifyContent: "space-between",
-									marginVertical: 20,
-									alignItems: "center",
-								}}
-							>
-								<Text
-									style={{
-										fontFamily: "Lato_700Bold",
-										fontSize: 25,
-										color: "#343a40",
-									}}
-								>
-									Register
-								</Text>
-								<TouchableOpacity
-									style={{
-										backgroundColor: disableButton
-											? "#eee"
-											: "#eb1d1d",
-										width: 50,
-										height: 50,
-										borderRadius: 25,
-										justifyContent: "center",
-										alignItems: "center",
-									}}
-									disabled={disableButton}
-									onPress={() => onSubmit()}
-								>
-									<AntDesign
-										name="right"
-										size={25}
-										color="#f8f9fa"
-									/>
-								</TouchableOpacity>
-							</View>
-							<Text
-								style={{
-									fontFamily: "Lato_400Regular",
-									fontSize: 16,
-									textDecorationLine: "underline",
-									paddingVertical: 20,
-								}}
-								onPress={() => {
-									navigation.navigate("Login");
-								}}
-							>
-								Login
-							</Text>
-						</View>
-					</ScrollView>
+					<RegisterMain
+						registerData={registerData}
+						error={error}
+						onChange={onChange}
+						onChangeText={onChangeText}
+						onSubmit={onSubmit}
+						disableButton={disableButton}
+						setDisableButton={setDisableButton}
+						phoneNumber={phoneNumber}
+						setPhoneNumber={setPhoneNumber}
+						userDetails={userDetails}
+						setUserDetails={setUserDetails}
+						modalAreaVisible={modalAreaVisible}
+						setModalAreaVisible={setModalAreaVisible}
+						modalVisible={modalVisible}
+						setModalVisible={setModalVisible}
+						query={query}
+						setQuery={setQuery}
+						dropDownValue={dropDownValue}
+						setDropDownValue={setDropDownValue}
+						isEmpty={isEmpty}
+						setIsEmpty={setIsEmpty}
+					/>
 				</KeyboardAvoidingView>
 			</View>
 		</SafeAreaView>

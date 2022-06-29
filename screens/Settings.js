@@ -1,21 +1,16 @@
 import { View, Text, Button } from "react-native";
 import React from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { logoutUser } from "../store/reducers/userReducers";
 import { useDispatch } from "react-redux";
+import {useTheme } from "@react-navigation/native";
+import NavBar from "../components/NavBar";
 
-const Settings = () => {
+const Settings = ({navigation}) => {
 	const dispatch = useDispatch();
+	const {colors, dark} = useTheme()
 	return (
 		<SafeAreaView>
-			<Text>Settings</Text>
-
-			<Button
-				title="Logout"
-				onPress={() => {
-					dispatch(logoutUser());
-				}}
-			/>
+			<NavBar navigation={navigation} navLabel="Settings" />
 		</SafeAreaView>
 	);
 };

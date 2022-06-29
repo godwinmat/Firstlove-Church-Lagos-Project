@@ -12,12 +12,14 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import React, { useState, useEffect, useCallback } from "react";
 
 import { AntDesign } from "@expo/vector-icons";
-import { FormInput, PasswordInput } from "../components/utility";
+import  PasswordInput from "../components/PasswordInput";
 import { useDispatch } from "react-redux";
 import { loginUser } from "../store/reducers/userReducers";
-import { useFocusEffect } from "@react-navigation/native";
+import { useFocusEffect, useTheme } from "@react-navigation/native";
+import FormInput from "../components/FormInput";
 
 const Login = ({ navigation }) => {
+	const { colors, dark } = useTheme();
 
 	const { width, height } = Dimensions.get("screen");
 	const [disableButton, setDisableButton] = useState(true);
@@ -71,14 +73,12 @@ const Login = ({ navigation }) => {
 	const onSubmit = async () => {
 		const result = await dispatch(
 			loginUser({
-				userorphone: loginData.userorphone,
+				userorphone: loginData.userorphone.trim(),
 				password: loginData.password,
 			})
 		).unwrap();
 
-		if (result.message === "error") {
-			console.log("error");
-		} else if (
+		if (
 			result.message === "incorrect username." ||
 			result.message === "incorrect phone number."
 		) {
@@ -96,7 +96,7 @@ const Login = ({ navigation }) => {
 			});
 		} else if (result.message === "incorrect password.") {
 			setError((prevState) => ({
-				...prevState,
+				userorphone: { state: false, message: "" },
 				password: { state: true, message: "Incorrect password." },
 			}));
 			setLoginData({
@@ -171,7 +171,10 @@ const Login = ({ navigation }) => {
 						alignItems: "center",
 					}}
 				>
-					<ScrollView showsVerticalScrollIndicator={false}>
+					<ScrollView
+						showsVerticalScrollIndicator={false}
+						keyboardShouldPersistTaps={"handled"}
+					>
 						<Text
 							style={{
 								fontFamily: "Lato_700Bold",
@@ -184,14 +187,21 @@ const Login = ({ navigation }) => {
 						</Text>
 						<FormInput
 							placeholder={"Username or Phone Number"}
-							styles={styles.input}
+							styles={{
+								marginBottom: 5,
+								borderColor: "grey",
+								color: "black",
+							}}
 							onChangeText={onChangeText("userorphone")}
 							error={error.userorphone.message}
 							defaultValue={loginData.userorphone}
 						/>
 						<PasswordInput
 							placeholder={"Password"}
-							styles={styles.input}
+							styles={{
+								marginBottom: 5,
+								borderColor: "grey",
+							}}
 							onChangeText={onChangeText("password")}
 							error={error.password.message}
 							defaultValue={loginData.password}
@@ -278,5 +288,6 @@ export default Login;
 const styles = StyleSheet.create({
 	input: {
 		marginBottom: 5,
+		color: "black",
 	},
 });
