@@ -1,9 +1,12 @@
 import bcrypt from "bcrypt";
 import User from "../models/user.js";
 import validator from "validator";
-import BacentaLeader from "../models/bacenta-leader.js";
 import Member from "../models/member.js";
 import Attendance from "../models/attendance.js";
+import { v2 as cloudinary } from "cloudinary";
+import "dotenv/config";
+
+const env = process.env;
 
 export const registerBacentaLeaderController = async (req, res) => {
 	const {
@@ -25,13 +28,6 @@ export const registerBacentaLeaderController = async (req, res) => {
 	try {
 		await user.save();
 
-		// const result = BacentaLeader({
-		// 	email,
-		// 	area,
-		// 	userid: userdetails.userid,
-		// 	role: [...userdetails.role, "Bacenta Leader"]
-		// });
-
 		await Member.findOneAndUpdate(
 			{ userid: userdetails.userid },
 			{ $push: { roles: "Bacenta Leader" } },
@@ -40,10 +36,9 @@ export const registerBacentaLeaderController = async (req, res) => {
 
 		const attendance = Attendance({
 			fullname: userdetails.fullname,
-			userid: userdetails.userid
+			userid: userdetails.userid,
 		});
-		// await result.save();
-		await attendance.save()
+		await attendance.save();
 		res.status(200).send(`User ${username} added successfully.`);
 	} catch (error) {
 		console.log(error);
@@ -67,11 +62,14 @@ export const checkIfUserExist = async (req, res) => {
 export const loginController = async (req, res) => {
 	const { userorphone, password } = req.body;
 
-	if (userorphone === "firstlovechurchlagos" && password === "flcladministrator") {
+	if (
+		userorphone === "firstlovechurchlagos" &&
+		password === "flcladministrator"
+	) {
 		res.send({
-			message: "admin login successful."
+			message: "admin login successful.",
 		});
-		return
+		return;
 	}
 
 	// There's likely to be an error if there's duplicate phonenumber
@@ -200,12 +198,63 @@ export const fetchUser = async (req, res) => {
 	};
 
 	try {
-		const details = await Member.findOne(query);
+		var details = await Member.findOne(query);
+		const { email } = await User.findOne(query, "email");
+		details = { ...details._doc, email };
 		if (details) {
 			res.status(200).send(details);
 		} else {
-			res.send("user does not exist.")
+			res.send("user does not exist.");
 		}
+	} catch (error) {
+		console.log(error);
+	}
+};
+
+export const updateProfile = async (req, res) => {
+	const updateDetails = req.body;
+
+	try {
+		const updatedData = await Member.findOneAndUpdate(
+			{ userid: updateDetails.userid },
+			updateDetails,
+			{ new: true }
+		);
+		const { email } = await User.findOneAndUpdate(
+			{ userid: updateDetails.userid },
+			{
+				email: updateDetails.email,
+			},
+			{ new: true, projection: "email" }
+		);
+
+		res.status(200).send({
+			data: { ...updatedData._doc, email },
+			message: "Profile updated successfully",
+		});
+	} catch (error) {
+		console.log(error);
+	}
+};
+
+export const signUpload = async (req, res) => {
+	const { publicId } = req.body;
+	const timestamp = Math.round(new Date().getTime() / 1000);
+	try {
+		const signature = cloudinary.utils.api_sign_request(
+			{
+				public_id: publicId,
+				timestamp,
+				invalidate: true,
+			},
+			env.CLOUDINARY_SECRET
+		);
+
+		res.status(200).send({
+			timestamp,
+			signature,
+			api_key: env.CLOUDINARY_API_KEY,
+		});
 	} catch (error) {
 		console.log(error);
 	}

@@ -5,7 +5,7 @@ import bodyParser from "body-parser";
 import userRoutes from "./routers/userRoutes.js";
 import areaRoutes from "./routers/areaRoutes.js";
 import memberRoutes from "./routers/memberRoutes.js";
-import attendanceRoutes from "./routers/attendanceRoutes.js"
+import attendanceRoutes from "./routers/attendanceRoutes.js";
 
 const app = express();
 const PORT = 5555;
@@ -13,20 +13,20 @@ const PORT = 5555;
 const uri = "mongodb://localhost:27017/flcldata";
 
 mongoose.connect(uri, {
-    useNewUrlParser: true
+	useNewUrlParser: true,
 });
 
 app.use(bodyParser.json());
 
 app.get("/", (req, res) => {
-    res.send("Welcome to the HomePage.")
-})
+	res.send("Welcome to the / page.");
+});
 
-app.use("/user", userRoutes)
-app.use("/area", areaRoutes)
-app.use("/member", memberRoutes)
-app.use("/attendance", attendanceRoutes)
+app.use("/user", userRoutes);
+app.use("/area", areaRoutes);
+app.use("/member", memberRoutes);
+app.use("/attendance", attendanceRoutes);
 
 app.listen(PORT, () => {
-    console.log(`Listening at localhost:${PORT}`)
-})
+	console.log(`Listening at localhost:${PORT}`);
+});

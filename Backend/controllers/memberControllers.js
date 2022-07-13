@@ -11,7 +11,6 @@ export const registerMember = async (req, res) => {
 		whatsappnumber,
 		gender,
 		address,
-		isleader,
 		dateofbirth,
 		image,
 		area,
@@ -29,7 +28,6 @@ export const registerMember = async (req, res) => {
 		whatsappnumber,
 		gender,
 		address,
-		isleader,
 		dateofbirth: {
 			day: Number(day),
 			month: Number(month),
